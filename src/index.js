@@ -31,7 +31,7 @@ app.post('/users', (request, response) => {
   const user = users.find((user) => user.username == username);
 
   if(user != null){
-    return response.status(406).json({error: 'Usuário já existe'});
+    return response.status(400).json({error: 'Usuário já existe'});
   }
 
   const id = uuidv4();
@@ -62,17 +62,20 @@ app.post('/todos', checksExistsUserAccount, (request, response) => {
   const {user} = request;
 
   const id = uuidv4();
+
+  const date = new Date();
+
   const todo = {
     id: id,
     title: title,
     done: false,
     deadline: new Date(deadline),
-    create_ad: new Date(),
+    created_at: date,
   }
 
   user.todos.push(todo);
 
-  return response.status(201).send();
+  return response.status(201).json(todo);
 
 });
 
@@ -90,7 +93,7 @@ app.put('/todos/:id', checksExistsUserAccount, (request, response) => {
   todo.title = title;
   todo.deadline = new Date(deadline);
 
-  return response.status(200).send();
+  return response.status(200).send(todo);
 
 
 });
@@ -100,21 +103,36 @@ app.patch('/todos/:id/done', checksExistsUserAccount, (request, response) => {
   const { user } = request;
 
   const todo = user.todos.find((todo) => todo.id == id);
+
+  if(todo == null){
+    return response.status(404).json({error: 'Todo não encontrado!'})
+  }
+
   todo.done = true;
 
-  return response.status(200).send();
+  return response.status(200).send(todo);
 
 });
 
 app.delete('/todos/:id', checksExistsUserAccount, (request, response) => {
   const { id } = request.params;
-  const { user } = request;
+  const { username } = request.headers;
+
+  const user = users.find((user) => user.username == username);
+
+  if(user == null){
+    return response.status(404).json({error: 'Usuário não localizado!'});
+  }
 
   const todo = user.todos.find((todo) => todo.id == id);
 
+  if(todo == null){
+    return response.status(404).json({error: 'Todo não encontrado!'})
+  }
+
   user.todos.splice(todo,1);
 
-  return response.status(200).send();
+  return response.status(204).send();
 
 });
 
